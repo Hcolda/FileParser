@@ -1,7 +1,8 @@
 #include "Json.h"
 
 #include <cmath>
-#include <stack>
+#include <memory>
+#include <cstring>
 
 #define JSON_NAMESPACE_START namespace qjson {
 #define JSON_NAMESPACE_END }
