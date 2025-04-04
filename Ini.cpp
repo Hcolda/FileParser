@@ -27,7 +27,7 @@ INIObject::Section::iterator& INIObject::Section::iterator::operator++()
 
 std::string INIObject::Section::iterator::operator*()
 {
-    return std::move(m_itor->second);
+    return m_itor->second;
 }
 
 std::string& INIObject::Section::operator[](const std::string& keyName)
@@ -298,7 +298,7 @@ INIObject qini::INIParser::fastParse(std::ifstream& infile)
     infile.read(buffer.data(), size);
     infile.close();
 
-    return std::move(INIParser::fastParse(buffer));
+    return INIParser::fastParse(buffer);
 }
 
 bool INIParser::skipSpace(std::string_view::iterator& i, std::string_view data, long long& error_line)
