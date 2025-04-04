@@ -93,6 +93,11 @@ namespace qjson
         const std::string& getString() const;
         std::string& getString();
 
+        std::string to_string(int indent = 0) const;
+        friend JObject operator""_qjson(const char *);
+        friend std::string to_string(const JObject& jo);
+        friend std::string to_string(const JObject& jo, int indent);
+
     private:
         std::unique_ptr<value_t> m_value; ///< The value of the JSON object.
         JValueType m_type; ///< The type of the JSON value.

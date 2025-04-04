@@ -451,6 +451,32 @@ std::string& JObject::getString()
     return *std::get_if<string_t>(m_value.get());
 }
 
+std::string JObject::to_string(int indent) const
+{
+    if (indent <= 0)
+        return JWriter::fastWrite(*this);
+    else
+        return JWriter::fastFormatWrite(*this, indent);
+}
+
+JObject operator""_qjson(const char * data)
+{
+    return JParser::fastParse(data);
+}
+
+std::string to_string(const JObject& jo)
+{
+    return JWriter::fastWrite(jo);
+}
+
+std::string to_string(const JObject& jo, int indent)
+{
+    if (indent <= 0)
+        return JWriter::fastWrite(jo);
+    else
+        return JWriter::fastFormatWrite(jo, indent);
+}
+
 JObject JParser::parse(std::string_view data)
 {
     std::size_t iter = 0;
