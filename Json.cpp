@@ -1,8 +1,10 @@
 #include "Json.h"
 
 #include <cmath>
-#include <memory>
 #include <cstring>
+#include <memory_resource>
+#include <string_view>
+#include <utility>
 
 #define JSON_NAMESPACE_START namespace qjson {
 #define JSON_NAMESPACE_END }
@@ -11,62 +13,43 @@ JSON_NAMESPACE_START
 
 JObject::JObject():
     m_type(JValueType::JNull),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = null_t();
-}
+    m_value(null_t())
+{}
 
 JObject::JObject(const JObject& jo):
     m_type(jo.m_type),
-    m_value(std::make_unique<value_t>())
-{
-    switch (jo.m_type) {
-    case JValueType::JString:
-        *m_value = *std::get_if<string_t>(jo.m_value.get());
-        break;
-    case JValueType::JList:
-        *m_value = *std::get_if<list_t>(jo.m_value.get());
-        break;
-    case JValueType::JDict:
-        *m_value = *std::get_if<dict_t>(jo.m_value.get());
-        break;
-    default:
-        *m_value = *jo.m_value;
-        break;
-    }
-}
+    m_value(jo.m_value)
+{}
 
 JObject::JObject(JObject&& jo) noexcept:
-    m_type(jo.m_type)
-{
-    m_value = std::move(jo.m_value);
-}
+    m_type(jo.m_type),
+    m_value(std::move(jo.m_value))
+{}
 
 JObject::JObject(JValueType jvt):
-    m_type(jvt),
-    m_value(std::make_unique<value_t>())
+    m_type(jvt)
 {
     switch (jvt) {
     case qjson::JValueType::JNull:
-        *m_value = null_t();
+        m_value = null_t();
         break;
     case qjson::JValueType::JInt:
-        *m_value = int_t();
+        m_value = int_t();
         break;
     case qjson::JValueType::JDouble:
-        *m_value = double_t();
+        m_value = double_t();
         break;
     case qjson::JValueType::JBool:
-        *m_value = bool_t();
+        m_value = bool_t();
         break;
     case qjson::JValueType::JString:
-        *m_value = string_t();
+        m_value = string_t(std::pmr::get_default_resource());
         break;
     case qjson::JValueType::JList:
-        *m_value = list_t();
+        m_value = list_t(std::pmr::get_default_resource());
         break;
     case qjson::JValueType::JDict:
-        *m_value = dict_t();
+        m_value = dict_t(std::pmr::get_default_resource());
         break;
     default:
         break;
@@ -75,87 +58,73 @@ JObject::JObject(JValueType jvt):
 
 JObject::JObject(long long value):
     m_type(JValueType::JInt),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = value;
-}
+    m_value(value)
+{}
 
 JObject::JObject(long value):
     m_type(JValueType::JInt),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = static_cast<long long>(value);
-}
+    m_value(static_cast<int_t>(value))
+{}
 
 JObject::JObject(int value):
     m_type(JValueType::JInt),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = static_cast<long long>(value);
-}
+    m_value(static_cast<int_t>(value))
+{}
 
 JObject::JObject(short value):
     m_type(JValueType::JInt),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = static_cast<long long>(value);
-}
+    m_value(static_cast<int_t>(value))
+{}
 
 JObject::JObject(bool value):
     m_type(JValueType::JBool),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = value;
-}
+    m_value(value)
+{}
 
 JObject::JObject(long double value):
     m_type(JValueType::JDouble),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = value;
-}
+    m_value(value)
+{}
 
 JObject::JObject(double value):
     m_type(JValueType::JDouble),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = static_cast<long double>(value);
-}
+    m_value(static_cast<double_t>(value))
+{}
 
 JObject::JObject(float value):
     m_type(JValueType::JDouble),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = static_cast<long double>(value);
-}
+    m_value(static_cast<double_t>(value))
+{}
 
 JObject::JObject(const char* data):
     m_type(JValueType::JString),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = std::string(data);
-}
+    m_value(string_t(data, std::pmr::get_default_resource()))
+{}
 
 JObject::JObject(const std::string& data):
     m_type(JValueType::JString),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = data;
-}
+    m_value(string_t(data, std::pmr::get_default_resource()))
+{}
 
 qjson::JObject::JObject(std::string_view data):
     m_type(JValueType::JString),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = std::string(data);
-}
+    m_value(string_t(data, std::pmr::get_default_resource()))
+{}
 
 JObject::JObject(std::string&& data) noexcept:
     m_type(JValueType::JString),
-    m_value(std::make_unique<value_t>())
-{
-    *m_value = std::move(data);
-}
+    m_value(string_t(std::move(data), std::pmr::get_default_resource()))
+{}
+
+JObject::JObject(const string_t& data):
+    m_type(JValueType::JString),
+    m_value(string_t(data, std::pmr::get_default_resource()))
+{}
+
+JObject::JObject(string_t&& data) noexcept:
+    m_type(JValueType::JString),
+    m_value(std::move(data))
+{}
 
 JObject::~JObject() = default;
 
@@ -165,20 +134,7 @@ JObject& JObject::operator=(const JObject& jo)
         return *this;
 
     m_type = jo.m_type;
-    switch (jo.m_type) {
-    case JValueType::JString:
-        *m_value = *std::get_if<string_t>(jo.m_value.get());
-        break;
-    case JValueType::JList:
-        *m_value = *std::get_if<list_t>(jo.m_value.get());
-        break;
-    case JValueType::JDict:
-        *m_value = *std::get_if<dict_t>(jo.m_value.get());
-        break;
-    default:
-        *m_value = *jo.m_value;
-        break;
-    }
+    m_value = jo.m_value;
     return *this;
 }
 
@@ -263,10 +219,10 @@ const JObject& JObject::operator[](std::size_t iter) const
         throw std::logic_error("The type isn't JList.");
     if (m_type == JValueType::JNull)
         throw std::logic_error("The type is JNull.");
-    list_t* local = std::get_if<list_t>(m_value.get());
-    if (iter >= local->size())
+    const auto local_list = std::get_if<list_t>(&m_value);
+    if (iter >= local_list->size())
         throw std::logic_error("The size is smaller than iter.");
-    return (*local).at(iter);
+    return (*local_list).at(iter);
 }
 
 JObject& JObject::operator[](std::size_t iter)
@@ -275,14 +231,14 @@ JObject& JObject::operator[](std::size_t iter)
         throw std::logic_error("The type isn't JList.");
     if (m_type == JValueType::JNull) {
         m_type = JValueType::JList;
-        *m_value = list_t();
-        std::get_if<list_t>(m_value.get())->resize(iter + 1);
-        return (*std::get_if<list_t>(m_value.get())).at(iter);
+        m_value = list_t(std::pmr::get_default_resource());
+        std::get_if<list_t>(&m_value)->resize(iter + 1);
+        return std::get_if<list_t>(&m_value)->at(iter);
     }
-    list_t* local = std::get_if<list_t>(m_value.get());
-    if (iter >= local->size())
-        local->resize(iter + 1);
-    return (*local).at(iter);
+    const auto local_list = std::get_if<list_t>(&m_value);
+    if (iter >= local_list->size())
+        local_list->resize(iter + 1);
+    return local_list->at(iter);
 }
 
 const JObject& JObject::operator[](int iter) const
@@ -301,7 +257,7 @@ const JObject& JObject::operator[](const char* str) const
         throw std::logic_error("The type isn't JDict.");
     if (m_type == JValueType::JNull)
         throw std::logic_error("The type is JNull.");
-    return (*std::get_if<dict_t>(m_value.get())).at(str);
+    return std::get_if<dict_t>(&m_value)->at(str);
 }
 
 JObject& JObject::operator[](const char* str)
@@ -310,10 +266,10 @@ JObject& JObject::operator[](const char* str)
         throw std::logic_error("The type isn't JDict.");
     if (m_type == JValueType::JNull) {
         m_type = JValueType::JDict;
-        *m_value = dict_t();
-        return (*std::get_if<dict_t>(m_value.get()))[str];
+        m_value = dict_t(std::pmr::get_default_resource());
+        return (*std::get_if<dict_t>(&m_value))[str];
     }
-    return (*std::get_if<dict_t>(m_value.get()))[str];
+    return (*std::get_if<dict_t>(&m_value))[str];
 }
 
 void JObject::push_back(const JObject& jo)
@@ -322,10 +278,10 @@ void JObject::push_back(const JObject& jo)
         throw std::logic_error("The type isn't JList.");
     if (m_type == JValueType::JNull) {
         m_type = JValueType::JList;
-        *m_value = list_t();
-        std::get_if<list_t>(m_value.get())->push_back(jo);
+        m_value = list_t(std::pmr::get_default_resource());
+        std::get_if<list_t>(&m_value)->push_back(jo);
     }
-    std::get_if<list_t>(m_value.get())->push_back(jo);
+    std::get_if<list_t>(&m_value)->push_back(jo);
 }
 
 void JObject::push_back(JObject&& jo)
@@ -334,16 +290,16 @@ void JObject::push_back(JObject&& jo)
         throw std::logic_error("The type isn't JList.");
     if (m_type == JValueType::JNull) {
         m_type = JValueType::JList;
-        *m_value = list_t();
-        std::get_if<list_t>(m_value.get())->push_back(std::move(jo));
+        m_value = list_t(std::pmr::get_default_resource());
+        std::get_if<list_t>(&m_value)->push_back(std::move(jo));
     }
-    std::get_if<list_t>(m_value.get())->push_back(std::move(jo));
+    std::get_if<list_t>(&m_value)->push_back(std::move(jo));
 }
 
 void JObject::pop_back()
 {
     if (m_type == JValueType::JList) {
-        list_t* local = std::get_if<list_t>(m_value.get());
+        list_t* local = std::get_if<list_t>(&m_value);
         if (local->empty())
             throw std::logic_error("The JList is empty.");
         local->pop_back();
@@ -356,8 +312,8 @@ bool JObject::hasMember(const std::string& str) const
 {
     if (m_type != JValueType::JDict)
         throw std::logic_error("The type isn't JDict.");
-    const dict_t* local = std::get_if<dict_t>(m_value.get());
-    if (local->find(str) != local->cend())
+    const dict_t* local = std::get_if<dict_t>(&m_value);
+    if (local->find(std::string_view(str)) != local->cend())
         return true;
     return false;
 }
@@ -371,84 +327,78 @@ const list_t& JObject::getList() const
 {
     if (m_type != JValueType::JList)
         throw std::logic_error("The type isn't JList.");
-    return *std::get_if<list_t>(m_value.get());
+    return *std::get_if<list_t>(&m_value);
 }
 
 list_t& JObject::getList()
 {
     if (m_type != JValueType::JList)
         throw std::logic_error("The type isn't JList.");
-    return *std::get_if<list_t>(m_value.get());
+    return *std::get_if<list_t>(&m_value);
 }
 
 const dict_t& JObject::getDict() const
 {
     if (m_type != JValueType::JDict)
         throw std::logic_error("The type isn't JDict.");
-    return *std::get_if<dict_t>(m_value.get());
+    return *std::get_if<dict_t>(&m_value);
 }
 
 dict_t& JObject::getDict()
 {
     if (m_type != JValueType::JDict)
         throw std::logic_error("The type isn't JDict.");
-    return *std::get_if<dict_t>(m_value.get());
+    return *std::get_if<dict_t>(&m_value);
 }
 
 const long long& JObject::getInt() const
 {
     if (m_type != JValueType::JInt)
         throw std::logic_error("This JObject isn't int");
-    return *std::get_if<int_t>(m_value.get());
+    return *std::get_if<int_t>(&m_value);
 }
 
 long long& JObject::getInt()
 {
     if (m_type != JValueType::JInt)
         throw std::logic_error("This JObject isn't int");
-    return *std::get_if<int_t>(m_value.get());
+    return *std::get_if<int_t>(&m_value);
 }
 
 const long double& JObject::getDouble() const
 {
     if (m_type != JValueType::JDouble)
         throw std::logic_error("This JObject isn't double");
-    return *std::get_if<double_t>(m_value.get());
+    return *std::get_if<double_t>(&m_value);
 }
 
 long double& JObject::getDouble()
 {
     if (m_type != JValueType::JDouble)
         throw std::logic_error("This JObject isn't double");
-    return *std::get_if<double_t>(m_value.get());
+    return *std::get_if<double_t>(&m_value);
 }
 
 const bool& JObject::getBool() const
 {
     if (m_type != JValueType::JBool)
         throw std::logic_error("This JObject isn't bool");
-    return *std::get_if<bool_t>(m_value.get());
+    return *std::get_if<bool_t>(&m_value);
 }
 
 bool& JObject::getBool()
 {
     if (m_type != JValueType::JBool)
         throw std::logic_error("This JObject isn't bool");
-    return *std::get_if<bool_t>(m_value.get());
+    return *std::get_if<bool_t>(&m_value);
 }
 
-const std::string& JObject::getString() const
+std::string JObject::getString() const
 {
     if (m_type != JValueType::JString)
         throw std::logic_error("This JObject isn't string");
-    return *std::get_if<string_t>(m_value.get());
-}
-
-std::string& JObject::getString()
-{
-    if (m_type != JValueType::JString)
-        throw std::logic_error("This JObject isn't string");
-    return *std::get_if<string_t>(m_value.get());
+    const auto ptr = std::get_if<string_t>(&m_value);
+    return { ptr->begin(), ptr->end() };
 }
 
 std::string JObject::to_string(int indent) const
@@ -488,7 +438,7 @@ JObject JParser::fastParse(std::ifstream& infile)
     infile.seekg(0, std::ios_base::end);
     std::size_t size = infile.tellg();
     infile.seekg(0, std::ios_base::beg);
-    std::string buffer;
+    std::pmr::string buffer{std::pmr::get_default_resource()};
     buffer.resize(size);
     infile.read(buffer.data(), size);
     infile.close();
@@ -519,7 +469,7 @@ JObject JParser::parse_(std::string_view data, std::size_t data_size, std::size_
             skipSpace(data, data_size, iter, error_line);
             if (data[iter] == '}')
                 return localJO;
-            std::string key(getString(data, data_size, iter, error_line));
+            std::pmr::string key(getString(data, data_size, iter, error_line));
             skipSpace(data, data_size, iter, error_line);
             if (data[iter] == ':')
                 ++iter;
@@ -585,10 +535,10 @@ void JParser::skipSpace(std::string_view data, std::size_t data_size, std::size_
     }
 }
 
-std::string JParser::getString(std::string_view data, std::size_t data_size, std::size_t& iter, long long error_line)
+string_t JParser::getString(std::string_view data, std::size_t data_size, std::size_t& iter, long long error_line)
 {
     if (data[iter] == '\"') {
-        std::string str;
+        string_t str{std::pmr::get_default_resource()};
         ++iter;
         while (iter < data_size && data[iter] != '\"') {
             if (data[iter] == '\\') {
@@ -805,7 +755,7 @@ std::string JWriter::write(const JObject& jo)
         } else {
             str += '{';
             for (auto iter = dict.begin(), iter2 = dict.begin(); iter != dict.end(); ++iter) {
-                str += '\"' + iter->first + "\":" + write(iter->second);
+                str += '\"' + std::string(iter->first) + "\":" + write(iter->second);
                 iter2 = iter;
                 if (++iter2 != dict.end())
                     str += ',';
@@ -907,7 +857,7 @@ std::string JWriter::formatWrite(const JObject& jo, size_t indent, std::size_t n
             for (std::size_t i = 0; i < n; i++) {
                 str += indent_space;
             }
-            str += '\"' + iter->first + "\": " + formatWrite(iter->second, indent, n + 1);
+            str += '\"' + std::string(iter->first) + "\": " + formatWrite(iter->second, indent, n + 1);
             iter2 = iter;
             if (++iter2 != dict.end()) {
                 str += ",\n";
