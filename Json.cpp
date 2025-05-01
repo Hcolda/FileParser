@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstring>
 #include <memory_resource>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -400,53 +401,44 @@ std::string JObject::getString() const
 
 std::string JObject::to_string(int indent) const
 {
+    JWriter jwriter;
     if (indent <= 0)
-        return JWriter::fastWrite(*this);
+        return jwriter.write(*this);
     else
-        return JWriter::fastFormatWrite(*this, indent);
+        return jwriter.formatWrite(*this, indent);
 }
 
 JObject operator""_qjson(const char * data)
 {
-    return JParser::fastParse(data);
+    JParser jparser;
+    return jparser.parse(data);
+}
+
+JObject to_json(std::string_view data)
+{
+    JParser jparser;
+    return jparser.parse(data);
 }
 
 std::string to_string(const JObject& jo)
 {
-    return JWriter::fastWrite(jo);
+    JWriter jwriter;
+    return jwriter.write(jo);
 }
 
 std::string to_string(const JObject& jo, int indent)
 {
+    JWriter jwriter;
     if (indent <= 0)
-        return JWriter::fastWrite(jo);
+        return jwriter.write(jo);
     else
-        return JWriter::fastFormatWrite(jo, indent);
+        return jwriter.formatWrite(jo, indent);
 }
 
 JObject JParser::parse(std::string_view data)
 {
     std::size_t iter = 0;
     return parse_(data, data.size(), iter);
-}
-
-JObject JParser::fastParse(std::ifstream& infile)
-{
-    infile.seekg(0, std::ios_base::end);
-    std::size_t size = infile.tellg();
-    infile.seekg(0, std::ios_base::beg);
-    std::pmr::string buffer{std::pmr::get_default_resource()};
-    buffer.resize(size);
-    infile.read(buffer.data(), size);
-    infile.close();
-
-    return JParser::fastParse(buffer);
-}
-
-JObject JParser::fastParse(std::string_view data)
-{
-    JParser jp;
-    return jp.parse(data);
 }
 
 JObject JParser::parse_(std::string_view data, std::size_t data_size, std::size_t& iter)
@@ -872,18 +864,6 @@ std::string JWriter::formatWrite(const JObject& jo, size_t indent, std::size_t n
     }
 
     return str;
-}
-
-std::string qjson::JWriter::fastWrite(const JObject &jo)
-{
-    JWriter jw;
-    return jw.write(jo) + '\n';
-}
-
-std::string qjson::JWriter::fastFormatWrite(const JObject &jo, std::size_t indent)
-{
-    JWriter jw;
-    return jw.formatWrite(jo, indent) + '\n';
 }
 
 JSON_NAMESPACE_END
