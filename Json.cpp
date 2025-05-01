@@ -24,7 +24,9 @@ JObject::JObject(const JObject& jo):
 JObject::JObject(JObject&& jo) noexcept:
     m_type(jo.m_type),
     m_value(std::move(jo.m_value))
-{}
+{
+    jo.m_type = JNull;
+}
 
 JObject::JObject(JValueType jvt):
     m_type(jvt)
@@ -143,7 +145,7 @@ JObject& JObject::operator=(JObject&& jo) noexcept
     if (this == &jo)
         return *this;
 
-    m_type = jo.m_type;
+    m_type = std::exchange(jo.m_type, JNull);
     m_value = std::move(jo.m_value);
     return *this;
 }
@@ -232,44 +234,39 @@ JObject& JObject::operator[](std::size_t iter)
     if (m_type == JValueType::JNull) {
         m_type = JValueType::JList;
         m_value = list_t(std::pmr::get_default_resource());
-        std::get_if<list_t>(&m_value)->resize(iter + 1);
-        return std::get_if<list_t>(&m_value)->at(iter);
     }
-    const auto local_list = std::get_if<list_t>(&m_value);
+    auto local_list = std::get_if<list_t>(&m_value);
     if (iter >= local_list->size())
         local_list->resize(iter + 1);
     return local_list->at(iter);
 }
 
-const JObject& JObject::operator[](int iter) const
-{
-    return operator[](static_cast<std::size_t>(iter));
-}
-
-JObject& JObject::operator[](int iter)
-{
-    return operator[](static_cast<std::size_t>(iter));
-}
-
-const JObject& JObject::operator[](const char* str) const
+const JObject& JObject::operator[](std::string_view str) const
 {
     if (m_type != JValueType::JNull && m_type != JValueType::JDict)
         throw std::logic_error("The type isn't JDict.");
     if (m_type == JValueType::JNull)
         throw std::logic_error("The type is JNull.");
-    return std::get_if<dict_t>(&m_value)->at(str);
+    const auto local_dict = std::get_if<dict_t>(&m_value);
+    auto iter = local_dict->find(str);
+    if (iter == local_dict->cend())
+        throw std::logic_error("Could not find the element.");
+    return iter->second;
 }
 
-JObject& JObject::operator[](const char* str)
+JObject& JObject::operator[](std::string_view str)
 {
     if (m_type != JValueType::JNull && m_type != JValueType::JDict)
         throw std::logic_error("The type isn't JDict.");
     if (m_type == JValueType::JNull) {
         m_type = JValueType::JDict;
         m_value = dict_t(std::pmr::get_default_resource());
-        return (*std::get_if<dict_t>(&m_value))[str];
     }
-    return (*std::get_if<dict_t>(&m_value))[str];
+    auto local_dict = std::get_if<dict_t>(&m_value);
+    auto iter = local_dict->find(str);
+    if (iter == local_dict->cend())
+        return local_dict->emplace(str, JObject{}).first->second;
+    return iter->second;
 }
 
 void JObject::push_back(const JObject& jo)
