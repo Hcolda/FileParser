@@ -97,10 +97,8 @@ namespace qjson
 
         const JObject& operator[](std::size_t itor) const;
         JObject& operator[](std::size_t itor);
-        const JObject& operator[](int itor) const;
-        JObject& operator[](int itor);
-        const JObject& operator[](const char* str) const;
-        JObject& operator[](const char* str);
+        const JObject& operator[](std::string_view str) const;
+        JObject& operator[](std::string_view str);
 
         void push_back(const JObject& jo);
         void push_back(JObject&& jo);
