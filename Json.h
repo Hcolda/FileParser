@@ -118,7 +118,8 @@ namespace qjson
         bool& getBool();
         std::string getString() const;
 
-        std::string to_string(int indent = 0) const;
+        std::string to_string() const;
+        std::string to_string(int indent) const;
 
     private:
         value_t     m_value; ///< The value of the JSON object.

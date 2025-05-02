@@ -399,6 +399,12 @@ std::string JObject::getString() const
     return { ptr->begin(), ptr->end() };
 }
 
+std::string JObject::to_string() const
+{
+    JWriter jwriter;
+    return jwriter.write(*this);
+}
+
 std::string JObject::to_string(int indent) const
 {
     JWriter jwriter;
