@@ -12,12 +12,12 @@ INIObject::Section::Section(
     : m_keys(section) {}
 
 INIObject::Section::iterator::iterator(
-    const std::unordered_map<std::string, std::string>::iterator &itor)
-    : m_itor(itor) {}
+    const std::unordered_map<std::string, std::string>::iterator &iter)
+    : m_itor(iter) {}
 
 INIObject::Section::iterator::iterator(
-    std::unordered_map<std::string, std::string>::iterator &&itor)
-    : m_itor(std::move(itor)) {}
+    std::unordered_map<std::string, std::string>::iterator &&iter)
+    : m_itor(std::move(iter)) {}
 
 INIObject::Section::iterator &INIObject::Section::iterator::operator++() {
   m_itor++;
@@ -32,10 +32,10 @@ std::string &INIObject::Section::operator[](const std::string &keyName) {
 
 const std::string &
 INIObject::Section::operator[](const std::string &keyName) const {
-  auto itor = m_keys.find(keyName);
-  if (itor == m_keys.end())
+  auto iter = m_keys.find(keyName);
+  if (iter == m_keys.end())
     throw std::logic_error("Invalid Keyword");
-  return itor->second;
+  return iter->second;
 }
 
 INIObject::Section::iterator INIObject::Section::begin() {
@@ -59,12 +59,12 @@ bool operator!=(const INIObject::Section::iterator &a,
 // ConstSection
 
 qini::INIObject::ConstSection::const_iterator::const_iterator(
-    const std::unordered_map<std::string, std::string>::const_iterator &itor)
-    : m_itor(itor) {}
+    const std::unordered_map<std::string, std::string>::const_iterator &iter)
+    : m_itor(iter) {}
 
 qini::INIObject::ConstSection::const_iterator::const_iterator(
-    std::unordered_map<std::string, std::string>::const_iterator &&itor)
-    : m_itor(std::move(itor)) {}
+    std::unordered_map<std::string, std::string>::const_iterator &&iter)
+    : m_itor(std::move(iter)) {}
 
 qini::INIObject::ConstSection::const_iterator &
 qini::INIObject::ConstSection::const_iterator::operator++() {
@@ -92,10 +92,10 @@ qini::INIObject::ConstSection::ConstSection(
 
 const std::string &
 qini::INIObject::ConstSection::operator[](const std::string &keyName) const {
-  auto itor = m_keys.find(keyName);
-  if (itor == m_keys.end())
+  auto iter = m_keys.find(keyName);
+  if (iter == m_keys.end())
     throw std::logic_error("Invalid Keyword");
-  return itor->second;
+  return iter->second;
 }
 
 qini::INIObject::ConstSection::const_iterator
@@ -113,14 +113,14 @@ qini::INIObject::ConstSection::end() {
 INIObject::iterator::iterator(
     const std::unordered_map<
         std::string, std::unordered_map<std::string, std::string>>::iterator
-        &itor)
-    : m_itor(itor) {}
+        &iter)
+    : m_itor(iter) {}
 
 INIObject::iterator::iterator(
     std::unordered_map<std::string,
                        std::unordered_map<std::string, std::string>>::iterator
-        &&itor)
-    : m_itor(std::move(itor)) {}
+        &&iter)
+    : m_itor(std::move(iter)) {}
 
 INIObject::iterator &INIObject::iterator::operator++() {
   m_itor++;
@@ -140,14 +140,14 @@ bool operator!=(const INIObject::iterator &a, const INIObject::iterator &b) {
 INIObject::const_iterator::const_iterator(
     const std::unordered_map<
         std::string,
-        std::unordered_map<std::string, std::string>>::const_iterator &itor)
-    : m_itor(itor) {}
+        std::unordered_map<std::string, std::string>>::const_iterator &iter)
+    : m_itor(iter) {}
 
 INIObject::const_iterator::const_iterator(
     std::unordered_map<
         std::string,
-        std::unordered_map<std::string, std::string>>::const_iterator &&itor)
-    : m_itor(std::move(itor)) {}
+        std::unordered_map<std::string, std::string>>::const_iterator &&iter)
+    : m_itor(std::move(iter)) {}
 
 INIObject::const_iterator &INIObject::const_iterator::operator++() {
   m_itor++;
@@ -197,10 +197,10 @@ INIObject::Section INIObject::operator[](const std::string &sectionName) {
 
 INIObject::ConstSection
 qini::INIObject::operator[](const std::string &sectionName) const {
-  auto itor = m_sections.find(sectionName);
-  if (itor == m_sections.end())
+  auto iter = m_sections.find(sectionName);
+  if (iter == m_sections.end())
     throw std::logic_error("Invalid Section Name");
-  return ConstSection(itor->second);
+  return ConstSection(iter->second);
 }
 
 INIObject::iterator INIObject::begin() {
