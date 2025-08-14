@@ -75,3 +75,4 @@ CMakeLists.txt.user*
 #Dir
 build/
 .vscode/
+.xmake/

@@ -364,6 +364,20 @@ std::string JObject::getString() const {
   return {ptr->begin(), ptr->end()};
 }
 
+std::pmr::string &JObject::getPMRString() {
+  if (m_type != JValueType::JString) {
+    throw std::logic_error("This JObject isn't string");
+  }
+  return *std::get_if<string_t>(&m_value);
+}
+
+const std::pmr::string &JObject::getPMRString() const {
+  if (m_type != JValueType::JString) {
+    throw std::logic_error("This JObject isn't string");
+  }
+  return *std::get_if<string_t>(&m_value);
+}
+
 std::string JObject::to_string() const {
   JWriter jwriter;
   return jwriter.write(*this);
@@ -647,8 +661,63 @@ std::string qjson::JParser::getLogicErrorString(long long error_line,
   return std::string(error) + " , in line " + std::to_string(error_line);
 }
 
-std::string JWriter::write(const JObject &jobject) {
-  std::string str;
+std::size_t JWriter::getJObjectSize(const JObject &jobject) {
+  std::size_t count = 0;
+  switch (jobject.getType()) {
+  case JValueType::JNull:
+    count += 4; // "null"
+    break;
+  case JValueType::JInt:
+    count += sizeof(long long) * 2; // "1234567890"
+    break;
+  case JValueType::JDouble:
+    count += sizeof(long double) * 2; // "1234567890.1234567890"
+    break;
+  case JValueType::JBool:
+    count += 5; // "true" or "false"
+    break;
+  case JValueType::JString: {
+    const std::pmr::string &localString = jobject.getPMRString();
+    if (localString.empty()) {
+      count += 2; // ""
+    } else {
+      count += localString.size() + 2; // "string"
+    }
+    break;
+  }
+  case JValueType::JList: {
+    const list_t &list = jobject.getList();
+    if (list.empty()) {
+      count += 2; // []
+    } else {
+      for (const auto &item : list) {
+        count += getJObjectSize(item);
+      }
+      count += list.size() + 2; // [item1,item2,...]
+    }
+    break;
+  }
+  case JValueType::JDict: {
+    const dict_t &dict = jobject.getDict();
+    if (dict.empty()) {
+      count += 2; // {}
+    } else {
+      for (const auto &[key, value] : dict) {
+        count += key.size() + getJObjectSize(value) + 4; // "key":value
+      }
+      count += dict.size() + 2; // {key1:value1,key2:value2,...}
+    }
+    break;
+  }
+  default:
+    break;
+  }
+  return count;
+}
+
+void JWriter::write_(const JObject &jobject, std::string &buffer) {
+  std::string &str = buffer;
+  str.reserve(getJObjectSize(jobject)); // Reserve space to avoid reallocations
   switch (jobject.getType()) {
   case JValueType::JNull:
     str += "null";
@@ -667,7 +736,7 @@ std::string JWriter::write(const JObject &jobject) {
     }
     break;
   case JValueType::JString: {
-    std::string localString(jobject.getString());
+    const std::pmr::string &localString = jobject.getPMRString();
     if (localString.empty()) {
       str += "\"\"";
     } else {
@@ -713,7 +782,7 @@ std::string JWriter::write(const JObject &jobject) {
     } else {
       str += '[';
       for (auto iter = list.begin(); iter != list.end(); ++iter) {
-        str += write(*iter);
+        write_(*iter, str);
         if (iter + 1 != list.end()) {
           str += ',';
         }
@@ -730,7 +799,8 @@ std::string JWriter::write(const JObject &jobject) {
       str += '{';
       for (auto iter = dict.begin(), iter2 = dict.begin(); iter != dict.end();
            ++iter) {
-        str += '\"' + std::string(iter->first) + "\":" + write(iter->second);
+        str += '\"' + std::string(iter->first) + "\":";
+        write_(iter->second, str);
         iter2 = iter;
         if (++iter2 != dict.end()) {
           str += ',';
@@ -743,7 +813,12 @@ std::string JWriter::write(const JObject &jobject) {
   default:
     break;
   }
+}
 
+std::string JWriter::write(const JObject &jobject) {
+  std::string str;
+  str.reserve(getJObjectSize(jobject)); // Reserve space to avoid reallocations
+  write_(jobject, str);
   return str;
 }
 

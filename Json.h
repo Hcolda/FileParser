@@ -107,6 +107,8 @@ public:
   const bool &getBool() const;
   bool &getBool();
   std::string getString() const;
+  std::pmr::string &getPMRString();
+  const std::pmr::string &getPMRString() const;
 
   std::string to_string() const;
   std::string to_string(int indent) const;
@@ -177,6 +179,10 @@ public:
    */
   std::string formatWrite(const JObject &jobject, std::size_t indent = 4,
                           std::size_t n = 1);
+
+private:
+  std::size_t getJObjectSize(const JObject &jobject);
+  void write_(const JObject &jobject, std::string &buffer);
 };
 } // namespace qjson
 

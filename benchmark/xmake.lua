@@ -1,0 +1,10 @@
+add_requires("benchmark")
+add_requires("nlohmann_json", { configs = { headeronly = true } })
+
+target("main")
+    set_kind("binary")
+    set_languages("cxxlatest")
+    set_optimize("fastest")
+    add_files("main.cpp", "../Json.cpp")
+    add_packages("benchmark")
+    add_packages("nlohmann_json")
