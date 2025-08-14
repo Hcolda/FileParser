@@ -51,7 +51,7 @@ JObject::JObject(JValueType jvt) : m_type(jvt) {
   }
 }
 
-JObject::JObject(long long value) : m_type(JValueType::JInt), m_value(value) {}
+JObject::JObject(int_t value) : m_type(JValueType::JInt), m_value(value) {}
 
 JObject::JObject(long value)
     : m_type(JValueType::JInt), m_value(static_cast<int_t>(value)) {}
@@ -62,9 +62,9 @@ JObject::JObject(int value)
 JObject::JObject(short value)
     : m_type(JValueType::JInt), m_value(static_cast<int_t>(value)) {}
 
-JObject::JObject(bool value) : m_type(JValueType::JBool), m_value(value) {}
+JObject::JObject(bool_t value) : m_type(JValueType::JBool), m_value(value) {}
 
-JObject::JObject(long double value)
+JObject::JObject(double_t value)
     : m_type(JValueType::JDouble), m_value(value) {}
 
 JObject::JObject(double value)
@@ -72,10 +72,6 @@ JObject::JObject(double value)
 
 JObject::JObject(float value)
     : m_type(JValueType::JDouble), m_value(static_cast<double_t>(value)) {}
-
-JObject::JObject(const char *data)
-    : m_type(JValueType::JString),
-      m_value(string_t(data, std::pmr::get_default_resource())) {}
 
 JObject::JObject(const std::string &data)
     : m_type(JValueType::JString),
@@ -314,42 +310,42 @@ dict_t &JObject::getDict() {
   return *std::get_if<dict_t>(&m_value);
 }
 
-const long long &JObject::getInt() const {
+const int_t &JObject::getInt() const {
   if (m_type != JValueType::JInt) {
     throw std::logic_error("This JObject isn't int");
   }
   return *std::get_if<int_t>(&m_value);
 }
 
-long long &JObject::getInt() {
+int_t &JObject::getInt() {
   if (m_type != JValueType::JInt) {
     throw std::logic_error("This JObject isn't int");
   }
   return *std::get_if<int_t>(&m_value);
 }
 
-const long double &JObject::getDouble() const {
+const double_t &JObject::getDouble() const {
   if (m_type != JValueType::JDouble) {
     throw std::logic_error("This JObject isn't double");
   }
   return *std::get_if<double_t>(&m_value);
 }
 
-long double &JObject::getDouble() {
+double_t &JObject::getDouble() {
   if (m_type != JValueType::JDouble) {
     throw std::logic_error("This JObject isn't double");
   }
   return *std::get_if<double_t>(&m_value);
 }
 
-const bool &JObject::getBool() const {
+const bool_t &JObject::getBool() const {
   if (m_type != JValueType::JBool) {
     throw std::logic_error("This JObject isn't bool");
   }
   return *std::get_if<bool_t>(&m_value);
 }
 
-bool &JObject::getBool() {
+bool_t &JObject::getBool() {
   if (m_type != JValueType::JBool) {
     throw std::logic_error("This JObject isn't bool");
   }
@@ -383,32 +379,34 @@ std::string JObject::to_string() const {
   return jwriter.write(*this);
 }
 
-std::string JObject::to_string(int indent) const {
+std::string JObject::to_string(std::size_t indent) const {
   JWriter jwriter;
-  if (indent <= 0) {
+  if (!indent) {
     return jwriter.write(*this);
   }
   return jwriter.formatWrite(*this, indent);
 }
 
-JObject operator""_qjson(const char *data) {
+JObject qjson::JObject::to_json(std::string_view data) {
   JParser jparser;
   return jparser.parse(data);
 }
 
-JObject to_json(std::string_view data) {
+JObject operator""_qjson(const char *data, std::size_t length) {
   JParser jparser;
-  return jparser.parse(data);
+  return jparser.parse(std::string_view{data, length});
 }
+
+JObject to_json(std::string_view data) { return JObject::to_json(data); }
 
 std::string to_string(const JObject &jobject) {
   JWriter jwriter;
   return jwriter.write(jobject);
 }
 
-std::string to_string(const JObject &jobject, int indent) {
+std::string to_string(const JObject &jobject, std::size_t indent) {
   JWriter jwriter;
-  if (indent <= 0) {
+  if (!indent) {
     return jwriter.write(jobject);
   }
   return jwriter.formatWrite(jobject, indent);
@@ -598,7 +596,7 @@ JObject JParser::getNumber(std::string_view data, std::size_t data_size,
   }
 
   if (isDouble) {
-    long double number = data[iter - 1] - '0';
+    double_t number = data[iter - 1] - '0';
     std::size_t single = 10;
     for (long long i = iter - 2; i >= static_cast<long long>(start);
          --i, single *= 10) {
@@ -661,17 +659,17 @@ std::string qjson::JParser::getLogicErrorString(long long error_line,
   return std::string(error) + " , in line " + std::to_string(error_line);
 }
 
-std::size_t JWriter::getJObjectSize(const JObject &jobject) {
+std::size_t JWriter::getJObjectSurmisedSize(const JObject &jobject) {
   std::size_t count = 0;
   switch (jobject.getType()) {
   case JValueType::JNull:
     count += 4; // "null"
     break;
   case JValueType::JInt:
-    count += sizeof(long long) * 2; // "1234567890"
+    count += sizeof(int_t) * 2; // "1234567890"
     break;
   case JValueType::JDouble:
-    count += sizeof(long double) * 2; // "1234567890.1234567890"
+    count += sizeof(double_t) * 2; // "1234567890.1234567890"
     break;
   case JValueType::JBool:
     count += 5; // "true" or "false"
@@ -691,7 +689,7 @@ std::size_t JWriter::getJObjectSize(const JObject &jobject) {
       count += 2; // []
     } else {
       for (const auto &item : list) {
-        count += getJObjectSize(item);
+        count += getJObjectSurmisedSize(item) + 1; // item,
       }
       count += list.size() + 2; // [item1,item2,...]
     }
@@ -703,7 +701,7 @@ std::size_t JWriter::getJObjectSize(const JObject &jobject) {
       count += 2; // {}
     } else {
       for (const auto &[key, value] : dict) {
-        count += key.size() + getJObjectSize(value) + 4; // "key":value
+        count += key.size() + getJObjectSurmisedSize(value) + 4; // "key":value,
       }
       count += dict.size() + 2; // {key1:value1,key2:value2,...}
     }
@@ -717,7 +715,8 @@ std::size_t JWriter::getJObjectSize(const JObject &jobject) {
 
 void JWriter::write_(const JObject &jobject, std::string &buffer) {
   std::string &str = buffer;
-  str.reserve(getJObjectSize(jobject)); // Reserve space to avoid reallocations
+  str.reserve(
+      getJObjectSurmisedSize(jobject)); // Reserve space to avoid reallocations
   switch (jobject.getType()) {
   case JValueType::JNull:
     str += "null";
@@ -799,7 +798,9 @@ void JWriter::write_(const JObject &jobject, std::string &buffer) {
       str += '{';
       for (auto iter = dict.begin(), iter2 = dict.begin(); iter != dict.end();
            ++iter) {
-        str += '\"' + std::string(iter->first) + "\":";
+        str += '\"';
+        str += iter->first;
+        str += "\":";
         write_(iter->second, str);
         iter2 = iter;
         if (++iter2 != dict.end()) {
@@ -817,7 +818,6 @@ void JWriter::write_(const JObject &jobject, std::string &buffer) {
 
 std::string JWriter::write(const JObject &jobject) {
   std::string str;
-  str.reserve(getJObjectSize(jobject)); // Reserve space to avoid reallocations
   write_(jobject, str);
   return str;
 }

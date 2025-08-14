@@ -63,15 +63,14 @@ public:
   JObject(const JObject &jobject);
   JObject(JObject &&jobject) noexcept;
   JObject(JValueType jvt);
-  JObject(long long value);
+  JObject(int_t value);
   JObject(long value);
   JObject(int value);
   JObject(short value);
-  JObject(bool value);
-  JObject(long double value);
+  JObject(bool_t value);
+  JObject(double_t value);
   JObject(double value);
   JObject(float value);
-  JObject(const char *data);
   JObject(const std::string &data);
   JObject(std::string_view data);
   JObject(std::string &&data) noexcept;
@@ -100,28 +99,29 @@ public:
   list_t &getList();
   const dict_t &getDict() const;
   dict_t &getDict();
-  const long long &getInt() const;
-  long long &getInt();
-  const long double &getDouble() const;
-  long double &getDouble();
-  const bool &getBool() const;
-  bool &getBool();
+  const int_t &getInt() const;
+  int_t &getInt();
+  const double_t &getDouble() const;
+  double_t &getDouble();
+  const bool_t &getBool() const;
+  bool_t &getBool();
   std::string getString() const;
-  std::pmr::string &getPMRString();
-  const std::pmr::string &getPMRString() const;
+  string_t &getPMRString();
+  const string_t &getPMRString() const;
 
   std::string to_string() const;
-  std::string to_string(int indent) const;
+  std::string to_string(std::size_t indent) const;
+  static JObject to_json(std::string_view data);
 
 private:
   value_t m_value;   ///< The value of the JSON object.
   JValueType m_type; ///< The type of the JSON value.
 };
 
-JObject operator""_qjson(const char *);
+JObject operator""_qjson(const char *data, std::size_t length);
 JObject to_json(std::string_view data);
 std::string to_string(const JObject &jobject);
-std::string to_string(const JObject &jobject, int indent);
+std::string to_string(const JObject &jobject, std::size_t indent);
 
 /**
  * @brief Class for parsing JSON data.
@@ -181,7 +181,7 @@ public:
                           std::size_t n = 1);
 
 private:
-  std::size_t getJObjectSize(const JObject &jobject);
+  std::size_t getJObjectSurmisedSize(const JObject &jobject);
   void write_(const JObject &jobject, std::string &buffer);
 };
 } // namespace qjson
