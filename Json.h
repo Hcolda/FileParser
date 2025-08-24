@@ -101,18 +101,16 @@ public:
   std::size_t size() const {
     if (is_owned_) {
       return std::visit([](const auto &s) { return s.size(); }, buffer_);
-    } else {
-      return view_.size();
     }
+    return view_.size();
   }
 
   operator std::string_view() const {
     if (is_owned_) {
       return std::visit([](const auto &s) { return std::string_view(s); },
                         buffer_);
-    } else {
-      return view_;
     }
+    return view_;
   }
 
   bool is_owned() const { return is_owned_; }
@@ -120,25 +118,22 @@ public:
   bool is_pmr() const {
     if (is_owned_) {
       return std::holds_alternative<std::pmr::string>(buffer_);
-    } else {
-      return false;
     }
+    return false;
   }
 
   std::string extract() && {
     if (is_owned_) {
       return std::get<std::string>(std::move(buffer_));
-    } else {
-      throw std::logic_error("Cannot extract from non-owned string_param");
     }
+    throw std::logic_error("Cannot extract from non-owned string_param");
   }
 
   std::pmr::string extract_pmr() && {
     if (is_owned_) {
       return std::get<std::pmr::string>(std::move(buffer_));
-    } else {
-      throw std::logic_error("Cannot extract from non-owned string_param");
     }
+    throw std::logic_error("Cannot extract from non-owned string_param");
   }
 
 private:
