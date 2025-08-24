@@ -9,6 +9,15 @@
 #include <variant>
 #include <vector>
 
+#ifdef USE_QLS_STRING_PARAM
+#include <string_param.hpp>
+#else
+#include <cassert>
+#include <memory_resource>
+#include <stdexcept>
+#include <variant>
+#endif // USE_QLS_STRING_PARAM
+
 namespace qjson {
 /**
  * @brief Enumeration for JSON value types.
@@ -43,6 +52,104 @@ struct string_hash {
     return hash_type{}(str);
   }
 };
+
+#ifndef USE_QLS_STRING_PARAM
+
+class string_param {
+public:
+  string_param(std::string_view view) : is_owned_(false), view_(view) {}
+
+  string_param(const std::string &str) : is_owned_(false), view_(str) {}
+
+  string_param(std::string &&str) : is_owned_(true), buffer_(std::move(str)) {}
+
+  string_param(const std::pmr::string &str) : is_owned_(false), view_(str) {}
+
+  string_param(std::pmr::string &&str)
+      : is_owned_(true), buffer_(std::move(str)) {}
+
+  template <std::size_t N>
+  string_param(const char (&str)[N], std::size_t size = N - 1)
+      : is_owned_(false), view_(str, size) {
+    assert(size < N);
+  }
+
+  string_param(const string_param &str)
+      : is_owned_(str.is_owned_), view_(str.view_), buffer_(str.buffer_) {}
+
+  string_param &operator=(const string_param &str) {
+    if (this != &str) {
+      is_owned_ = str.is_owned_;
+      view_ = str.view_;
+      buffer_ = str.buffer_;
+    }
+    return *this;
+  }
+
+  string_param(string_param &&str)
+      : is_owned_(str.is_owned_), view_(str.view_),
+        buffer_(std::move(str.buffer_)) {}
+  string_param &operator=(string_param &&str) {
+    if (this != &str) {
+      is_owned_ = str.is_owned_;
+      view_ = str.view_;
+      buffer_ = std::move(str.buffer_);
+    }
+    return *this;
+  }
+
+  std::size_t size() const {
+    if (is_owned_) {
+      return std::visit([](const auto &s) { return s.size(); }, buffer_);
+    } else {
+      return view_.size();
+    }
+  }
+
+  operator std::string_view() const {
+    if (is_owned_) {
+      return std::visit([](const auto &s) { return std::string_view(s); },
+                        buffer_);
+    } else {
+      return view_;
+    }
+  }
+
+  bool is_owned() const { return is_owned_; }
+
+  bool is_pmr() const {
+    if (is_owned_) {
+      return std::holds_alternative<std::pmr::string>(buffer_);
+    } else {
+      return false;
+    }
+  }
+
+  std::string extract() && {
+    if (is_owned_) {
+      return std::get<std::string>(std::move(buffer_));
+    } else {
+      throw std::logic_error("Cannot extract from non-owned string_param");
+    }
+  }
+
+  std::pmr::string extract_pmr() && {
+    if (is_owned_) {
+      return std::get<std::pmr::string>(std::move(buffer_));
+    } else {
+      throw std::logic_error("Cannot extract from non-owned string_param");
+    }
+  }
+
+private:
+  std::string_view view_;
+  std::variant<std::string, std::pmr::string> buffer_;
+  bool is_owned_;
+};
+
+#else
+using string_param = qls::string_param;
+#endif // STRING_PARAM_HPP
 
 using null_t = bool;
 using int_t = long long;
@@ -111,7 +218,7 @@ public:
 
   std::string to_string() const;
   std::string to_string(std::size_t indent) const;
-  static JObject to_json(std::string_view data);
+  static JObject to_json(string_param data);
 
 private:
   value_t m_value;   ///< The value of the JSON object.
@@ -119,7 +226,7 @@ private:
 };
 
 JObject operator""_qjson(const char *data, std::size_t length);
-JObject to_json(std::string_view data);
+JObject to_json(string_param data);
 std::string to_string(const JObject &jobject);
 std::string to_string(const JObject &jobject, std::size_t indent);
 
@@ -135,7 +242,7 @@ public:
    * @param data The JSON data to parse.
    * @return The parsed JSON object.
    */
-  JObject parse(std::string_view data);
+  JObject parse(string_param data);
 
 protected:
   JObject parse_(std::string_view data, std::size_t data_size,
