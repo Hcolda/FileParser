@@ -81,6 +81,22 @@ qjson::JObject::JObject(std::string_view data)
     : m_type(JValueType::JString),
       m_value(string_t(data, std::pmr::get_default_resource())) {}
 
+qjson::JObject::JObject(const string_param &data)
+    : m_type(JValueType::JString),
+      m_value(
+          string_t(std::string_view(data), std::pmr::get_default_resource())) {}
+
+qjson::JObject::JObject(string_param &&data) : m_type(JValueType::JString) {
+  if (data.is_owned()) {
+    if (data.is_pmr()) {
+      m_value = string_t(std::move(data).extract_pmr());
+    } else {
+      m_value =
+          string_t(std::string_view(data), std::pmr::get_default_resource());
+    }
+  }
+}
+
 JObject::JObject(std::string &&data) noexcept
     : m_type(JValueType::JString),
       m_value(string_t(data, std::pmr::get_default_resource())) {}
