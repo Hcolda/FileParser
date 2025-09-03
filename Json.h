@@ -13,8 +13,12 @@
 #include <string_param.hpp>
 #else
 #include <cassert>
+#include <format>
+#include <iterator>
 #include <memory_resource>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <variant>
 #endif // USE_QLS_STRING_PARAM
 
@@ -40,11 +44,12 @@ public:
 
   string_param(const std::string &str) : is_owned_(false), view_(str) {}
 
-  string_param(std::string &&str) : is_owned_(true), buffer_(std::move(str)) {}
+  string_param(std::string &&str) noexcept
+      : is_owned_(true), buffer_(std::move(str)) {}
 
   string_param(const std::pmr::string &str) : is_owned_(false), view_(str) {}
 
-  string_param(std::pmr::string &&str)
+  string_param(std::pmr::string &&str) noexcept
       : is_owned_(true), buffer_(std::move(str)) {}
 
   template <typename It, std::sentinel_for<It> S>
@@ -68,11 +73,11 @@ public:
   string_param(const string_param &) = delete;
   string_param &operator=(const string_param &) = delete;
 
-  string_param(string_param &&str)
+  string_param(string_param &&str) noexcept
       : is_owned_(str.is_owned_), view_(str.view_),
         buffer_(std::move(str.buffer_)) {}
 
-  string_param &operator=(string_param &&str) {
+  string_param &operator=(string_param &&str) noexcept {
     if (this != &str) {
       is_owned_ = str.is_owned_;
       view_ = str.view_;
